@@ -1,44 +1,37 @@
 package com.postgresql;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class SingletonDesignPattern {
+import com.sun.istack.logging.Logger;
+
+public class PostGresCrud {
 	// Step 1
 	// create a SingletonDesignPattern class.
 	// static member holds only one instance of the SingletonDesignPattern class.
 
-	private static SingletonDesignPattern jdbc;
+	private static final Logger logger = Logger.getLogger(PostGresCrud.class);
+	private static PostGresCrud jdbc;
+	PostGresConnection postGres = new PostGresConnection();
 
 	// SingletonDesignPattern prevents the instantiation from any other class.
-	private SingletonDesignPattern() {
+	private PostGresCrud() {
 	}
 
 	// Now we are providing gloabal point of access.
-	public static SingletonDesignPattern getInstance() {
+	public static PostGresCrud getInstance() {
 		if (jdbc == null) {
-			jdbc = new SingletonDesignPattern();
-			System.out.println("Instance is created only one");
+			jdbc = new PostGresCrud();
+			logger.info("Instance is created only one");
 		}
 		return jdbc;
 	}
 
-	// to get the connection from methods like insert, view etc.
-	private static Connection getConnection() throws ClassNotFoundException, SQLException {
-
-		Connection con = null;
-		Class.forName("org.postgresql.Driver");
-		con = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "admin");
-		return con;
-
-	}
-
 	// to insert the record into the database
-	public int insert(String name, String place) throws SQLException {
+	public int insert(int id, String name, int age, String address, float salary) throws SQLException {
 		Connection c = null;
 
 		PreparedStatement ps = null;
@@ -47,13 +40,13 @@ public class SingletonDesignPattern {
 
 		try {
 
-			c = this.getConnection();
+			c = postGres.getPostGresConnectionInstance();
 			ps = c.prepareStatement("INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY)values(?,?,?,?,?)");
-			ps.setInt(1, 2);
+			ps.setInt(1, id);
 			ps.setString(2, name);
-			ps.setInt(3, 3);
-			ps.setString(4, place);
-			ps.setFloat(5, 0f);
+			ps.setInt(3, age);
+			ps.setString(4, address);
+			ps.setFloat(5, salary);
 			recordCounter = ps.executeUpdate();
 
 		} catch (Exception e) {
@@ -77,17 +70,16 @@ public class SingletonDesignPattern {
 
 		try {
 
-			con = this.getConnection();
+			con = postGres.getPostGresConnectionInstance();
 			ps = con.prepareStatement("select * from COMPANY where name=?");
 			ps.setString(1, name);
 			rs = ps.executeQuery();
 			while (rs.next()) {
-				System.out.println("Name= " + rs.getString(2) + "\t" + "Age= " + rs.getInt(3));
-
+				logger.info("Name= " + rs.getString(2) + "\t" + "Age= " + rs.getInt(3));
 			}
 
 		} catch (Exception e) {
-			System.out.println(e);
+			logger.info("Error" + e);
 		} finally {
 			if (rs != null) {
 				rs.close();
@@ -102,15 +94,16 @@ public class SingletonDesignPattern {
 	}
 
 	// to update the password for the given username
-	public int update(String name, String password) throws SQLException {
+	public int update(String name, int age) throws SQLException {
 		Connection c = null;
 		PreparedStatement ps = null;
 
 		int recordCounter = 0;
 		try {
-			c = this.getConnection();
-			ps = c.prepareStatement(" update company set name=? where Age='" + 1 + "' ");
-			ps.setString(1, "shanu123");
+			c = postGres.getPostGresConnectionInstance();
+			ps = c.prepareStatement(" update company set name=? where Age=? ");
+			ps.setString(1, name);
+			ps.setInt(2, age);
 			recordCounter = ps.executeUpdate();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -127,14 +120,14 @@ public class SingletonDesignPattern {
 	}
 
 	// to delete the data from the database
-	public int delete(int userid) throws SQLException {
+	public int delete(String name) throws SQLException {
 		Connection c = null;
 		PreparedStatement ps = null;
 		int recordCounter = 0;
-		String userids = "shanu";
 		try {
-			c = this.getConnection();
-			ps = c.prepareStatement(" delete from company where name='" + userids + "' ");
+			c = postGres.getPostGresConnectionInstance();
+			ps = c.prepareStatement(" delete from company where name=? ");
+			ps.setString(1, name);
 			recordCounter = ps.executeUpdate();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -153,7 +146,7 @@ public class SingletonDesignPattern {
 
 		Statement stmt = null;
 		try {
-			Connection connection = this.getConnection();
+			Connection connection = postGres.getPostGresConnectionInstance();
 			stmt = connection.createStatement();
 			String sql = "CREATE TABLE COMPANY " + "(ID INT PRIMARY KEY     NOT NULL,"
 					+ " NAME           TEXT    NOT NULL, " + " AGE            INT     NOT NULL, "
@@ -165,7 +158,7 @@ public class SingletonDesignPattern {
 			System.err.println(e.getClass().getName() + ": " + e.getMessage());
 			System.exit(0);
 		}
-		System.out.println("Table created successfully");
+		logger.info("Table created successfully");
 	}
 
 }// End of SingletonDesignPattern class
